@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 
-namespace api_core.Controllers
+namespace DevIO.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -40,7 +40,6 @@ namespace api_core.Controllers
         [HttpDelete("{id}")]
         public void Delete(int id)
         {
-
         }
     }
 }
