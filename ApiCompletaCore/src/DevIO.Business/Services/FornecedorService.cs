@@ -49,6 +49,7 @@ namespace DevIO.Business.Services
             return true;
         }
 
+
         public async Task AtualizarEndereco(Endereco endereco)
         {
             if (!ExecutarValidacao(new EnderecoValidation(), endereco)) return;
