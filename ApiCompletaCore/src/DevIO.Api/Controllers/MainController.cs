@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using DevIO.Business.Intefaces;
 using DevIO.Business.Notificacoes;
 using Microsoft.AspNetCore.Mvc;
@@ -10,52 +8,69 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 namespace DevIO.Api.Controllers
 {
     [ApiController]
-    public class MainController : ControllerBase
+    public abstract class MainController : ControllerBase
     {
         private readonly INotificador _notificador;
+        public readonly IUser AppUser;
 
-        public MainController(INotificador notificador)
+        protected Guid UsuarioId { get; set; }
+        protected bool UsuarioAutenticado { get; set; }
+
+        protected MainController(INotificador notificador, 
+                                 IUser appUser)
         {
             _notificador = notificador;
+            AppUser = appUser;
+
+            if (appUser.IsAuthenticated())
+            {
+                UsuarioId = appUser.GetUserId();
+                UsuarioAutenticado = true;
+            }
         }
 
-        public bool OperacaoValida()
+        protected bool OperacaoValida()
         {
             return !_notificador.TemNotificacao();
         }
 
         protected ActionResult CustomResponse(object result = null)
         {
-           if(OperacaoValida())
+            if (OperacaoValida())
             {
-                return Ok(value: new { success = true, data = result });
+                return Ok(new
+                {
+                    success = true,
+                    data = result
+                });
             }
 
-            return BadRequest(error: new { success = false, errors = _notificador.ObterNotificacoes()
-                .Select(n=> n.Mensagem) });
+            return BadRequest(new
+            {
+                success = false,
+                errors = _notificador.ObterNotificacoes().Select(n => n.Mensagem)
+            });
         }
 
         protected ActionResult CustomResponse(ModelStateDictionary modelState)
         {
-            if (!modelState.IsValid) NotificarErroModelInvalida(modelState);
-
+            if(!modelState.IsValid) NotificarErroModelInvalida(modelState);
             return CustomResponse();
         }
 
         protected void NotificarErroModelInvalida(ModelStateDictionary modelState)
         {
             var erros = modelState.Values.SelectMany(e => e.Errors);
-            foreach(var erro in erros)
+            foreach (var erro in erros)
             {
-                var errorMsg = erro.ErrorMessage == null ? erro.ErrorMessage : erro.Exception.Message;
+                var errorMsg = erro.Exception == null ? erro.ErrorMessage : erro.Exception.Message;
                 NotificarErro(errorMsg);
             }
         }
 
-        protected void NotificarErro(string message)
+        protected void NotificarErro(string mensagem)
         {
-            _notificador.Handle(new Notificacao(message));
+            _notificador.Handle(new Notificacao(mensagem));
         }
-
     }
 }
